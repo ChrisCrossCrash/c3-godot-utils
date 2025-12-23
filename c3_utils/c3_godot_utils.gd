@@ -1,4 +1,8 @@
-class_name Utils
+# C3 Godot Utils
+# v1.0.0
+# File revision: 2025-12-23
+
+class_name C3Utils
 
 
 ## Clamps a 3D input vector from a cube-shaped range to a unit sphere.[br][br]

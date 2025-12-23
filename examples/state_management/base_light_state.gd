@@ -1,5 +1,5 @@
 class_name BaseLightState
-extends State
+extends C3State
 
 @export var color := Color(0.5, 0.5, 0.5)
 @export var duration := 2.0

@@ -1,0 +1,18 @@
+[gd_scene load_steps=3 format=3 uid="uid://csq4u3txto527"]
+
+[ext_resource type="Script" uid="uid://dlig2f20a36bp" path="res://examples/state_management/traffic_light_demo.gd" id="1_yyfd0"]
+[ext_resource type="Script" uid="uid://b3uwuok8e6fxg" path="res://utils/c3_state_machine.gd" id="2_6ewhw"]
+
+[node name="TrafficLightDemo" type="Node"]
+script = ExtResource("1_yyfd0")
+
+[node name="TrafficLightStateMachine" type="Node" parent="."]
+script = ExtResource("2_6ewhw")
+metadata/_custom_type_script = "uid://b3uwuok8e6fxg"
+
+[node name="TrafficLightLabel" type="Label" parent="."]
+offset_left = 16.0
+offset_top = 16.0
+offset_right = 187.0
+offset_bottom = 39.0
+text = "Traffic Light: (starting)"

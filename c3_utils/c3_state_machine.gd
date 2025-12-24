@@ -1,6 +1,6 @@
 # C3 Godot Utils
 # v1.0.0
-# File revision: 2025-12-23
+# File revision: 2025-12-24
 
 @tool
 class_name C3StateMachine
@@ -41,7 +41,7 @@ var current_state: C3State
 ## Initializes the state machine by giving each child state a reference to the
 ## context node it belongs to and enter the default starting_state.
 func init(context: Node) -> void:
-    for child in get_children():
+    for child: C3State in get_children():
         child.context = context
 
     # Initialize to the default state

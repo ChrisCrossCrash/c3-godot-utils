@@ -98,3 +98,15 @@ func _get_configuration_warnings() -> PackedStringArray:
             )
 
     return warnings
+
+
+func _notification(what: int) -> void:
+    if not Engine.is_editor_hint():
+        return
+
+    if what in [
+        NOTIFICATION_CHILD_ORDER_CHANGED,
+        NOTIFICATION_READY,
+        NOTIFICATION_EDITOR_PRE_SAVE,
+    ]:
+        update_configuration_warnings()

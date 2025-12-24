@@ -1,0 +1,21 @@
+name: tests
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  gut:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Godot
+        uses: lihop/setup-godot@v3
+        with:
+          version: 4.5.1-stable
+
+      - name: Run GUT
+        run: |
+          godot --headless --path . -s addons/gut/gut_cmdln.gd \
+            -gdir=res://tests -ginclude_subdirs -gexit

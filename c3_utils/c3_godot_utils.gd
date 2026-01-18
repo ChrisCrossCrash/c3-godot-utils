@@ -1,6 +1,6 @@
 # C3 Godot Utils
-# v1.0.0
-# File revision: 2025-12-23
+# v1.1.0
+# File revision: 2026-01-18
 
 class_name C3Utils
 
@@ -101,3 +101,12 @@ static func format_time(seconds: float, sign_positive: bool = false) -> String:
         return sign_prefix + "%02d:%02d:%02d.%03d" % [hours, minutes, secs, ms]
     else:
         return sign_prefix + "%02d:%02d.%03d" % [minutes, secs, ms]
+
+
+## Returns true if the event is any key press, button press, or mouse click.
+static func is_any_key(event: InputEvent) -> bool:
+    return (
+        event is InputEventKey and event.pressed and not event.echo
+        or event is InputEventJoypadButton and event.pressed
+        or event is InputEventMouseButton and event.pressed
+    )

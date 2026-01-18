@@ -12,6 +12,7 @@ gdir
 gexit
 ginclude
 Incentivized
+Joypad
 lerp
 lihop
 maxf

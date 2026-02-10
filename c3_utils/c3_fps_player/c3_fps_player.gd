@@ -8,8 +8,11 @@ class_name C3FpsPlayer
 
 @export_category("Movement")
 
+@export var allow_running := true
+
 ## Horizontal movement speed in units per second.
 @export var walk_speed := 5.0
+@export var run_speed := 10.0
 
 ## Downward acceleration applied when the player is not on the floor in units/s^2.
 ##
@@ -81,11 +84,15 @@ func _apply_movement() -> void:
         "move_backward"
     )
 
-    var direction := (transform.basis * Vector3(input_dir.x, 0, input_dir.y)).normalized()
+    var direction := transform.basis * Vector3(input_dir.x, 0, input_dir.y)
+
+    var move_speed: float = walk_speed
+    if allow_running and Input.is_action_pressed("move_run"):
+        move_speed = run_speed
 
     if direction:
-        velocity.x = direction.x * walk_speed
-        velocity.z = direction.z * walk_speed
+        velocity.x = direction.x * move_speed
+        velocity.z = direction.z * move_speed
     else:
-        velocity.x = move_toward(velocity.x, 0, walk_speed)
-        velocity.z = move_toward(velocity.z, 0, walk_speed)
+        velocity.x = move_toward(velocity.x, 0, move_speed)
+        velocity.z = move_toward(velocity.z, 0, move_speed)

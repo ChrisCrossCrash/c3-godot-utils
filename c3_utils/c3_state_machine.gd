@@ -1,5 +1,5 @@
 # C3 Godot Utils
-# v1.0.0
+# v1.1.0
 # File revision: 2025-12-24
 
 @tool

@@ -1,9 +1,10 @@
 # C3 Godot Utils
-# v1.0.0
+# v1.1.0
 # File revision: 2026-02-09
 
 extends CharacterBody3D
 class_name C3FpsPlayer
+## A minimal first-person player node for Godot 4.
 
 @export_category("Movement")
 

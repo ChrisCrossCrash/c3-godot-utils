@@ -25,7 +25,7 @@ class SpyState:
     var return_on_physics: C3State = null
     var return_on_input: C3State = null
 
-    func enter() -> void:
+    func enter(_from: C3State) -> void:
         entered += 1
 
     func exit() -> void:

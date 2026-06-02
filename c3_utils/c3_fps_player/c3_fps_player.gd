@@ -1,5 +1,5 @@
 # C3 Godot Utils
-# v4.1.0
+# 4.2.0
 # File revision: 2026-02-09
 
 extends CharacterBody3D

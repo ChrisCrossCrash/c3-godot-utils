@@ -304,3 +304,93 @@ class TestFail:
 	func test_fail_does_not_emit_finished() -> void:
 		_sse._fail("error")
 		assert_signal_not_emitted(_sse, "finished")
+
+
+class TestIsOk:
+	extends GutTest
+
+	var _sse: C3SSERequest
+
+	func before_each() -> void:
+		_sse = C3SSERequest.new()
+		add_child_autofree(_sse)
+
+	func test_200_is_ok() -> void:
+		assert_true(_sse._is_ok(200))
+
+	func test_201_is_ok() -> void:
+		assert_true(_sse._is_ok(201))
+
+	func test_299_is_ok() -> void:
+		assert_true(_sse._is_ok(299))
+
+	func test_199_is_not_ok() -> void:
+		assert_false(_sse._is_ok(199))
+
+	func test_300_is_not_ok() -> void:
+		assert_false(_sse._is_ok(300))
+
+	func test_404_is_not_ok() -> void:
+		assert_false(_sse._is_ok(404))
+
+	func test_500_is_not_ok() -> void:
+		assert_false(_sse._is_ok(500))
+
+
+class TestFinishErrorBody:
+	extends GutTest
+
+	var _sse: C3SSERequest
+
+	func before_each() -> void:
+		_sse = C3SSERequest.new()
+		add_child_autofree(_sse)
+		watch_signals(_sse)
+
+	func test_emits_response_error_with_code_and_body() -> void:
+		_sse._response_code = 401
+		_sse._buffer = '{"error": "bad key"}'
+		_sse._finish_error_body()
+		assert_signal_emitted_with_parameters(
+			_sse, "response_error", [401, '{"error": "bad key"}']
+		)
+
+	func test_emits_empty_body_when_buffer_empty() -> void:
+		_sse._response_code = 503
+		_sse._buffer = ""
+		_sse._finish_error_body()
+		assert_signal_emitted_with_parameters(_sse, "response_error", [503, ""])
+
+	func test_resets_state_to_idle() -> void:
+		_sse._state = C3SSERequest._State.ERROR_BODY
+		_sse._finish_error_body()
+		assert_eq(_sse._state, C3SSERequest._State.IDLE)
+
+	func test_clears_buffer() -> void:
+		_sse._buffer = "leftover"
+		_sse._finish_error_body()
+		assert_eq(_sse._buffer, "")
+
+	func test_stops_processing() -> void:
+		_sse.set_process(true)
+		_sse._finish_error_body()
+		assert_false(_sse.is_processing())
+
+	func test_does_not_emit_finished() -> void:
+		_sse._finish_error_body()
+		assert_signal_not_emitted(_sse, "finished")
+
+
+class TestBusyDuringErrorBody:
+	extends GutTest
+
+	var _sse: C3SSERequest
+
+	func before_each() -> void:
+		_sse = C3SSERequest.new()
+		add_child_autofree(_sse)
+
+	func test_busy_when_receiving_error_body() -> void:
+		_sse._state = C3SSERequest._State.ERROR_BODY
+		var err := _sse.request("http://example.com/")
+		assert_eq(err, ERR_BUSY)

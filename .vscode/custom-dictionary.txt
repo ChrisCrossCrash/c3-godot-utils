@@ -1,4 +1,5 @@
 ADPCM
+alives
 autofree
 CAPSLOCK
 ceili
@@ -36,6 +37,7 @@ noto
 NUMLOCK
 ONNX
 onready
+qwen
 randf
 randfn
 respawn
@@ -44,6 +46,7 @@ speaches
 stylebox
 subdirs
 tscn
+userinfo
 VOLUMEDOWN
 VOLUMEMUTE
 VOLUMEUP

@@ -1,5 +1,5 @@
 # C3 Godot Utils
-# v4.0.0
+# v4.1.0
 # File revision: 2026-05-13
 
 class_name C3Utils

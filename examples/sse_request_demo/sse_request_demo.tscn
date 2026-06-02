@@ -1,0 +1,21 @@
+[gd_scene format=3 uid="uid://bcs0vqla2r1n6"]
+
+[ext_resource type="Script" uid="uid://dmdre8r6dc1q2" path="res://examples/sse_request_demo/sse_request_demo.gd" id="1_5pd67"]
+
+[node name="SSERequestDemo" type="Control" unique_id=1192206419]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_5pd67")
+
+[node name="Label" type="Label" parent="." unique_id=819463291]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+autowrap_mode = 3

@@ -1,6 +1,6 @@
 # C3 Godot Utils
-# 4.2.0
-# File revision: 2026-06-02
+# v4.2.1
+# File revision: 2026-06-05
 
 class_name C3SSERequest
 extends Node
@@ -26,7 +26,7 @@ signal stream_started(response_code: int, headers: PackedStringArray)
 ## `event_type` is the `event:` field value, or `"message"` if absent.
 signal event_received(data: String, event_type: String)
 ## The stream closed cleanly (socket end or server hang-up).
-signal finished()
+signal finished
 ## The server responded with a non-2xx status. Carries the full (non-SSE)
 ## response body — typically a JSON error payload — once it has been read.
 ## Emitted instead of [signal finished]; [signal stream_started] still fires
@@ -113,32 +113,36 @@ func _parse_url(url: String) -> bool:
 
 	if _host == "localhost":
 		push_warning(
-			"C3SSERequest: \"localhost\" may resolve to ::1 (IPv6) on Windows, " +
-			"causing connection failures if the server listens only on IPv4. " +
-			"Use \"127.0.0.1\" instead."
+			(
+				'C3SSERequest: "localhost" may resolve to ::1 (IPv6) on '
+				+ "Windows, causing connection failures if the server listens "
+				+ 'only on IPv4. Use "127.0.0.1" instead.'
+			)
 		)
 
 	return not _host.is_empty()
 
 
 func _process(_delta: float) -> void:
+	const CONNECT_ERRORS := [
+		HTTPClient.STATUS_CANT_CONNECT,
+		HTTPClient.STATUS_CANT_RESOLVE,
+		HTTPClient.STATUS_CONNECTION_ERROR,
+		HTTPClient.STATUS_TLS_HANDSHAKE_ERROR,
+	]
 	_client.poll()
-	var status := _client.get_status()
+	var client_status := _client.get_status()
 
 	match _state:
 		_State.CONNECTING:
-			match status:
-				HTTPClient.STATUS_CONNECTED:
-					_send_request()
-				HTTPClient.STATUS_CANT_CONNECT, \
-				HTTPClient.STATUS_CANT_RESOLVE, \
-				HTTPClient.STATUS_CONNECTION_ERROR, \
-				HTTPClient.STATUS_TLS_HANDSHAKE_ERROR:
-					_fail("Could not connect to %s:%d." % [_host, _port])
-				# STATUS_RESOLVING / STATUS_CONNECTING: still working; wait a frame.
+			if client_status == HTTPClient.STATUS_CONNECTED:
+				_send_request()
+			elif client_status in CONNECT_ERRORS:
+				_fail("Could not connect to %s:%d." % [_host, _port])
+			# STATUS_RESOLVING / STATUS_CONNECTING: still working; wait a frame.
 
 		_State.REQUESTING:
-			match status:
+			match client_status:
 				HTTPClient.STATUS_BODY:
 					_response_code = _client.get_response_code()
 					stream_started.emit(
@@ -147,7 +151,8 @@ func _process(_delta: float) -> void:
 					# A non-2xx body is a regular (non-SSE) payload — usually a
 					# JSON error. Collect it raw rather than parsing SSE events.
 					_state = (
-						_State.STREAMING if _is_ok(_response_code)
+						_State.STREAMING
+						if _is_ok(_response_code)
 						else _State.ERROR_BODY
 					)
 				HTTPClient.STATUS_CONNECTED:

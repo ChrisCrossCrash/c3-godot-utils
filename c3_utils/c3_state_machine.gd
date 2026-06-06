@@ -1,5 +1,5 @@
 # C3 Godot Utils
-# v4.2.1
+# v4.2.2
 # File revision: 2026-04-28
 
 @tool

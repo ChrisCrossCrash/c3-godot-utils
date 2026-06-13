@@ -33,6 +33,7 @@ MEDIAPREVIOUS
 MEDIARECORD
 MEDIASTOP
 minf
+multibyte
 noto
 NUMLOCK
 ONNX
@@ -46,9 +47,11 @@ speaches
 stylebox
 subdirs
 tscn
+undecoded
 userinfo
 VOLUMEDOWN
 VOLUMEMUTE
 VOLUMEUP
 WASD
+webp
 xpivot

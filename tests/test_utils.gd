@@ -341,3 +341,107 @@ class TestIsAnyKey:
 		event.axis = JOY_AXIS_LEFT_X
 		event.axis_value = 0.8
 		assert_false(C3Utils.is_any_key(event))
+
+
+class TestGetImageLoader:
+	extends GutTest
+
+	var _image: Image
+
+	func before_each() -> void:
+		_image = Image.new()
+
+	func _loader(
+		body: PackedByteArray,
+		headers: PackedStringArray = PackedStringArray(),
+		url: String = "",
+	) -> Callable:
+		return C3Utils._get_image_loader(body, headers, url, _image)
+
+	# Pads `magic` with zero bytes so the body is long enough for all slice checks.
+	func _pad(magic: PackedByteArray) -> PackedByteArray:
+		var buf := magic.duplicate()
+		buf.resize(20)
+		return buf
+
+	func test_png_magic_returns_png_loader() -> void:
+		var body := _pad(PackedByteArray([0x89, 0x50, 0x4E, 0x47]))
+		assert_eq(_loader(body).get_method(), "load_png_from_buffer")
+
+	func test_jpg_magic_returns_jpg_loader() -> void:
+		var body := _pad(PackedByteArray([0xFF, 0xD8, 0xFF]))
+		assert_eq(_loader(body).get_method(), "load_jpg_from_buffer")
+
+	func test_webp_magic_returns_webp_loader() -> void:
+		# RIFF at bytes 0-3, file size at 4-7 (arbitrary), WEBP at bytes 8-11.
+		var body := PackedByteArray([
+			0x52, 0x49, 0x46, 0x46,
+			0x00, 0x00, 0x00, 0x00,
+			0x57, 0x45, 0x42, 0x50,
+		])
+		body.resize(20)
+		assert_eq(_loader(body).get_method(), "load_webp_from_buffer")
+
+	func test_riff_without_webp_marker_returns_null_loader() -> void:
+		# RIFF header for a WAV file — should not be detected as WebP.
+		var body := PackedByteArray([
+			0x52, 0x49, 0x46, 0x46,
+			0x00, 0x00, 0x00, 0x00,
+			0x57, 0x41, 0x56, 0x45,
+		])
+		body.resize(20)
+		assert_true(_loader(body).is_null())
+
+	func test_bmp_magic_returns_bmp_loader() -> void:
+		var body := _pad(PackedByteArray([0x42, 0x4D]))
+		assert_eq(_loader(body).get_method(), "load_bmp_from_buffer")
+
+	func test_dds_magic_returns_dds_loader() -> void:
+		var body := _pad(PackedByteArray([0x44, 0x44, 0x53, 0x20]))
+		assert_eq(_loader(body).get_method(), "load_dds_from_buffer")
+
+	func test_exr_magic_returns_exr_loader() -> void:
+		var body := _pad(PackedByteArray([0x76, 0x2F, 0x31, 0x01]))
+		assert_eq(_loader(body).get_method(), "load_exr_from_buffer")
+
+	func test_svg_content_type_returns_svg_loader() -> void:
+		var body := _pad(PackedByteArray([0x3C]))
+		var headers := PackedStringArray(["Content-Type: image/svg+xml"])
+		assert_eq(_loader(body, headers).get_method(), "load_svg_from_buffer")
+
+	func test_svg_content_type_case_insensitive() -> void:
+		var body := _pad(PackedByteArray([0x3C]))
+		var headers := PackedStringArray(["CONTENT-TYPE: IMAGE/SVG+XML"])
+		assert_eq(_loader(body, headers).get_method(), "load_svg_from_buffer")
+
+	func test_svg_content_type_with_charset_param() -> void:
+		var body := _pad(PackedByteArray([0x3C]))
+		var headers := PackedStringArray(["Content-Type: image/svg+xml; charset=utf-8"])
+		assert_eq(_loader(body, headers).get_method(), "load_svg_from_buffer")
+
+	func test_svg_url_extension_returns_svg_loader() -> void:
+		var body := _pad(PackedByteArray([0x3C]))
+		assert_eq(_loader(body, PackedStringArray(), "https://example.com/image.svg").get_method(), "load_svg_from_buffer")
+
+	func test_svg_url_extension_case_insensitive() -> void:
+		var body := _pad(PackedByteArray([0x3C]))
+		assert_eq(_loader(body, PackedStringArray(), "https://example.com/image.SVG").get_method(), "load_svg_from_buffer")
+
+	func test_non_svg_content_type_returns_null_loader() -> void:
+		var body := _pad(PackedByteArray([0x3C]))
+		var headers := PackedStringArray(["Content-Type: text/html"])
+		assert_true(_loader(body, headers).is_null())
+
+	func test_unknown_bytes_no_headers_no_url_returns_null_loader() -> void:
+		var body := _pad(PackedByteArray([0x00, 0x01, 0x02, 0x03]))
+		assert_true(_loader(body).is_null())
+
+	func test_empty_body_returns_null_loader() -> void:
+		assert_true(_loader(PackedByteArray()).is_null())
+
+	func test_magic_takes_priority_over_svg_content_type() -> void:
+		# A PNG body should be detected as PNG even if the server sent a wrong
+		# Content-Type header claiming SVG.
+		var body := _pad(PackedByteArray([0x89, 0x50, 0x4E, 0x47]))
+		var headers := PackedStringArray(["Content-Type: image/svg+xml"])
+		assert_eq(_loader(body, headers).get_method(), "load_png_from_buffer")

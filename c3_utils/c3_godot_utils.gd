@@ -1,6 +1,6 @@
 # C3 Godot Utils
-# v4.2.2
-# File revision: 2026-05-13
+# v4.3.0
+# File revision: 2026-06-13
 
 class_name C3Utils
 
@@ -31,6 +31,14 @@ const _MOUSE_WHEEL_BUTTONS := [
 	MOUSE_BUTTON_WHEEL_LEFT,
 	MOUSE_BUTTON_WHEEL_RIGHT,
 ]
+
+static var _MAGIC_PNG := PackedByteArray([0x89, 0x50, 0x4E, 0x47])
+static var _MAGIC_JPG := PackedByteArray([0xFF, 0xD8, 0xFF])
+static var _MAGIC_WEBP_RIFF := PackedByteArray([0x52, 0x49, 0x46, 0x46])
+static var _MAGIC_WEBP_MARKER := PackedByteArray([0x57, 0x45, 0x42, 0x50])
+static var _MAGIC_BMP := PackedByteArray([0x42, 0x4D])
+static var _MAGIC_DDS := PackedByteArray([0x44, 0x44, 0x53, 0x20])
+static var _MAGIC_EXR := PackedByteArray([0x76, 0x2F, 0x31, 0x01])
 
 
 ## Clamps a 3D input vector from a cube-shaped range to a unit sphere.[br][br]
@@ -359,3 +367,79 @@ class HashSet:
 
 	func _to_string() -> String:
 		return "HashSet(%s)" % str(_data.keys())
+
+
+## Downloads an image from [param url] and returns it as an [Image],
+## or [code]null[/code] on failure.[br][br]
+##
+## The image format is detected from the response body's magic bytes (PNG, JPG,
+## WebP, BMP, DDS, EXR). SVG has no reliable magic number, so it is identified
+## separately using the [code]Content-Type[/code] response header and the URL
+## file extension.[br][br]
+##
+## This function is asynchronous and must be awaited. It creates a temporary
+## [HTTPRequest] node, attaches it to the scene tree, and frees it when the
+## request completes.[br][br]
+##
+## [codeblock]
+## var image: Image = await C3Utils.download_image("https://example.com/photo.png")
+## if image:
+##     texture = ImageTexture.create_from_image(image)
+## [/codeblock]
+static func download_image(url: String) -> Image:
+	var http := HTTPRequest.new()
+	Engine.get_main_loop().root.add_child(http)
+	var err := http.request(url)
+	if err != OK:
+		http.queue_free()
+		return null
+
+	var result: Array = await http.request_completed
+	http.queue_free()
+
+	var request_error: int = result[0]
+	var response_code: int = result[1]
+	var headers: PackedStringArray = result[2]
+	var body: PackedByteArray = result[3]
+
+	if request_error != OK or response_code != 200:
+		return null
+
+	var image := Image.new()
+	var loader := _get_image_loader(body, headers, url, image)
+	if not loader.is_null() and loader.call(body) == OK:
+		return image
+
+	return null
+
+
+static func _get_image_loader(
+	body: PackedByteArray,
+	headers: PackedStringArray,
+	url: String,
+	image: Image,
+) -> Callable:
+	if body.slice(0, 4) == _MAGIC_PNG:
+		return image.load_png_from_buffer
+	elif body.slice(0, 3) == _MAGIC_JPG:
+		return image.load_jpg_from_buffer
+	elif body.slice(0, 4) == _MAGIC_WEBP_RIFF and body.slice(8, 12) == _MAGIC_WEBP_MARKER:
+		return image.load_webp_from_buffer
+	elif body.slice(0, 2) == _MAGIC_BMP:
+		return image.load_bmp_from_buffer
+	elif body.slice(0, 4) == _MAGIC_DDS:
+		return image.load_dds_from_buffer
+	elif body.slice(0, 4) == _MAGIC_EXR:
+		return image.load_exr_from_buffer
+	# SVG files don't have a reliable magic number, so we check the
+	# Content-Type header and file extension as a fallback.
+	var content_type := ""
+	for header: String in headers:
+		if header.to_lower().begins_with("content-type:"):
+			content_type = header.split(":", true, 1)[1].strip_edges().to_lower()
+			break
+	var has_svg_extension := url.get_file().get_extension().to_lower() == "svg"
+	var has_svg_content_type := content_type.begins_with("image/svg")
+	if has_svg_content_type or has_svg_extension:
+		return image.load_svg_from_buffer
+	return Callable()
